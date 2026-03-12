@@ -113,6 +113,7 @@ export default function HistoryPage() {
       RESOLVED_NO:  { label: "NO WON",  color: "#DC2626", bg: "rgba(220,38,38,0.1)",  bd: "rgba(220,38,38,0.25)"  },
       ACTIVE:       { label: "Active",  color: "#0066FF", bg: "rgba(0,102,255,0.1)",  bd: "rgba(0,102,255,0.25)"  },
       EXPIRED:      { label: "Expired", color: "var(--t4)", bg: "var(--border-soft)", bd: "var(--border)" },
+      PENDING:      { label: "Pending", color: "var(--t4)", bg: "var(--border-soft)", bd: "var(--border)" },
     };
     const s = map[status];
     return (
