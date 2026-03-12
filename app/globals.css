@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Light mode (default) ─────────────────────────────────────── */
+:root {
+  --page:         #F9FAFB;
+  --surface:      #FFFFFF;
+  --border:       #E5E7EB;
+  --border-soft:  #F3F4F6;
+
+  --nav-bg:       #FFFFFF;
+  --nav-border:   #E5E7EB;
+
+  --sidebar-bg:   #FFFFFF;
+  --sidebar-bd:   #E5E7EB;
+
+  /* Cards are ALWAYS dark (like Polymarket) */
+  --card-bg:      #1B1C2E;
+  --card-bg2:     #14151F;
+  --card-bd:      rgba(255,255,255,0.07);
+  --card-bd-hover:rgba(255,255,255,0.13);
+  --card-t1:      #FFFFFF;
+  --card-t2:      rgba(255,255,255,0.6);
+  --card-t3:      rgba(255,255,255,0.35);
+
+  /* Brand */
+  --brand:        #0066FF;
+  --brand-bg:     rgba(0,102,255,0.1);
+  --brand-bd:     rgba(0,102,255,0.25);
+
+  /* Page text */
+  --t1: #111827;
+  --t2: #374151;
+  --t3: #6B7280;
+  --t4: #9CA3AF;
+  --t5: #D1D5DB;
+
+  /* Semantic */
+  --green:     #16A34A;
+  --green-btn: #15803D;
+  --red:       #DC2626;
+  --red-btn:   #B91C1C;
+
+  --sidebar-w: 230px;
+  --nav-h: 62px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* ── Dark mode ────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --page:       #0F1117;
+  --surface:    #1A1B2E;
+  --border:     rgba(255,255,255,0.08);
+  --border-soft:rgba(255,255,255,0.04);
+
+  --nav-bg:     #13141F;
+  --nav-border: rgba(255,255,255,0.08);
+
+  --sidebar-bg: #13141F;
+  --sidebar-bd: rgba(255,255,255,0.08);
+
+  --card-bg:    #1E2033;
+  --card-bg2:   #16172A;
+  --card-bd:    rgba(255,255,255,0.08);
+  --card-bd-hover: rgba(255,255,255,0.16);
+
+  --brand-bg:   rgba(0,102,255,0.15);
+  --brand-bd:   rgba(0,102,255,0.3);
+
+  --t1: #F9FAFB;
+  --t2: #D1D5DB;
+  --t3: #9CA3AF;
+  --t4: #6B7280;
+  --t5: #374151;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--page);
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.5;
+  transition: background 0.2s, color 0.2s;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 8px; }
+
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+input[type=number] { -moz-appearance: textfield; }
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes ticker-in {
+  0%   { opacity: 0; transform: translateY(4px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.live-dot {
+  display: inline-block;
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #EF4444;
+  animation: live-pulse 1.8s ease-in-out infinite;
+}
+
+.ticker-amount {
+  animation: ticker-in 2s ease-out forwards;
+  pointer-events: none;
+}
+
+.card-enter { animation: slide-up 0.2s ease-out both; }
+
+@keyframes modal-backdrop {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes modal-slide {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Mobile layout */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 0px; --nav-h: 56px; }
+
+  .sidebar-desktop { display: none !important; }
+
+  .market-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bottom-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .page-content {
+    padding: 14px 12px !important;
+  }
+}

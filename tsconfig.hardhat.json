@@ -1,0 +1,18 @@
+{
+  // tsconfig.hardhat.json
+  // Separate TypeScript config just for Hardhat scripts and contracts.
+  // Hardhat uses this via ts-node to compile and run deploy.ts etc.
+  // Kept separate from the main tsconfig.json (which is for Next.js)
+  // so they don't conflict with each other's module settings.
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "./dist"
+  },
+  "include": ["hardhat.config.ts", "scripts/**/*.ts", "test/**/*.ts"]
+}
