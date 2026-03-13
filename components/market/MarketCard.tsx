@@ -287,32 +287,44 @@ export function MarketCard({ asset, market, price }: Props) {
               })}
             </div>
 
-            {/* Amount input  */}
+            {/* Amount input */}
             {showAmt && isActive && (
-              <div style={{ marginBottom: 10, display: "flex", flexDirection: "column", gap: 5 }}>
+              <div style={{ marginBottom: 10, display: "flex", flexDirection: "column", gap: 7 }}>
+                {/* Quick chips */}
+                <div style={{ display: "flex", gap: 5 }}>
+                  {["0.01", "0.05", "0.1", "0.5"].map((v) => (
+                    <button key={v} onClick={() => setAmount(v)} style={{
+                      flex: 1, padding: "5px 0", borderRadius: 6, fontSize: 11,
+                      fontWeight: 600, cursor: "pointer", border: "1px solid",
+                      borderColor: amount === v ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.08)",
+                      background: amount === v ? "rgba(255,255,255,0.1)" : "transparent",
+                      color: amount === v ? "#fff" : "var(--card-t3)",
+                      transition: "all 0.1s",
+                    }}>{v}</button>
+                  ))}
+                </div>
+                {/* Custom input */}
                 <div style={{
                   display: "flex", borderRadius: 8, overflow: "hidden",
                   border: "1px solid rgba(255,255,255,0.1)",
                   background: "rgba(255,255,255,0.04)",
                 }}>
-                  <span style={{ padding: "0 12px", fontSize: 12, color: "var(--card-t3)",
+                  <span style={{ padding: "0 10px", fontSize: 12, color: "var(--card-t3)",
                     display: "flex", alignItems: "center",
-                    borderRight: "1px solid rgba(255,255,255,0.07)" }}>Amount</span>
+                    borderRight: "1px solid rgba(255,255,255,0.07)" }}>STT</span>
                   <input
                     type="number" min="0.001" step="0.01" value={amount}
                     onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Custom amount"
                     style={{
                       flex: 1, background: "transparent", border: "none", outline: "none",
-                      padding: "9px 10px", color: "#fff", fontSize: 13, textAlign: "right",
+                      padding: "8px 10px", color: "#fff", fontSize: 13,
                       fontFamily: "'JetBrains Mono', monospace",
                     }}
                   />
-                  <span style={{ padding: "0 12px", fontSize: 12, color: "var(--card-t3)",
-                    display: "flex", alignItems: "center",
-                    borderLeft: "1px solid rgba(255,255,255,0.07)" }}>STT</span>
                 </div>
                 {error  && <p style={{ fontSize: 11, color: "#F87171" }}>{error}</p>}
-                {txHash && <a href={`https://somnia-testnet.socialscan.io/tx/${txHash}`}
+                {txHash && <a href={"https://shannon-explorer.somnia.network/tx/" + txHash}
                   target="_blank" style={{ fontSize: 11, color: "#60A5FA" }}>✓ Bet confirmed ↗</a>}
               </div>
             )}
