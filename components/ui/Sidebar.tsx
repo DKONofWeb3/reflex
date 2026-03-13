@@ -8,6 +8,7 @@ export type AssetFilter = "all" | AssetSymbol;
 interface Props {
   timeFilter: TimeFilter; assetFilter: AssetFilter;
   onTimeChange: (t: TimeFilter) => void; onAssetChange: (a: AssetFilter) => void;
+  timeCount?: (key: TimeFilter) => number;
 }
 
 const ASSET_LOGOS: Record<AssetSymbol, string> = {
@@ -16,15 +17,15 @@ const ASSET_LOGOS: Record<AssetSymbol, string> = {
   SOMI: "https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@1.0.0/128/color/som.png",
 };
 
-const TIMES: { key: TimeFilter; label: string; count?: number }[] = [
-  { key: "all",     label: "All",     count: 3  },
-  { key: "5min",    label: "5 Min",   count: 1  },
-  { key: "15min",   label: "15 Min",  count: 1  },
-  { key: "hourly",  label: "1 Hour",  count: 1  },
-  { key: "4hour",   label: "4 Hours", count: 1  },
-  { key: "daily",   label: "Daily",   count: 0  },
-  { key: "weekly",  label: "Weekly",  count: 0  },
-  { key: "monthly", label: "Monthly", count: 0  },
+const TIMES: { key: TimeFilter; label: string }[] = [
+  { key: "all",     label: "All"     },
+  { key: "5min",    label: "5 Min"   },
+  { key: "15min",   label: "15 Min"  },
+  { key: "hourly",  label: "1 Hour"  },
+  { key: "4hour",   label: "4 Hours" },
+  { key: "daily",   label: "Daily"   },
+  { key: "weekly",  label: "Weekly"  },
+  { key: "monthly", label: "Monthly" },
 ];
 
 const ASSETS: { key: AssetFilter; label: string; logo?: string }[] = [
@@ -34,7 +35,7 @@ const ASSETS: { key: AssetFilter; label: string; logo?: string }[] = [
   { key: "SOMI", label: "Somnia",   logo: ASSET_LOGOS.SOMI },
 ];
 
-export function Sidebar({ timeFilter, assetFilter, onTimeChange, onAssetChange }: Props) {
+export function Sidebar({ timeFilter, assetFilter, onTimeChange, onAssetChange, timeCount }: Props) {
   const Row = ({ active, onClick, icon, label, count }: {
     active: boolean; onClick: () => void;
     icon?: React.ReactNode; label: string; count?: number;
@@ -83,12 +84,13 @@ export function Sidebar({ timeFilter, assetFilter, onTimeChange, onAssetChange }
       {/* Time filters */}
       <Row
         active={timeFilter === "all"} onClick={() => onTimeChange("all")}
-        icon={<GridIcon />} label="All" count={3}
+        icon={<GridIcon />} label="All" count={timeCount ? timeCount("all") : undefined}
       />
       <div style={{ height: 8 }} />
-      {TIMES.filter((t) => t.key !== "all").map(({ key, label, count }) => (
+      {TIMES.filter((t) => t.key !== "all").map(({ key, label }) => (
         <Row key={key} active={timeFilter === key} onClick={() => onTimeChange(key)}
-          icon={<ClockIcon />} label={label} count={count} />
+          icon={<ClockIcon />} label={label}
+          count={timeCount ? timeCount(key as TimeFilter) : undefined} />
       ))}
 
       {/* Divider */}
