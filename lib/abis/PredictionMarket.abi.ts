@@ -11,7 +11,7 @@ export const PREDICTION_MARKET_ABI = [
 
   // Returns full Market struct
   // Status enum: 0=ACTIVE, 1=RESOLVED_YES, 2=RESOLVED_NO, 3=EXPIRED
-  "function getMarket(uint256 marketId) view returns (uint256 id, string asset, string question, uint256 targetPrice, uint256 createdPrice, uint256 deadline, uint8 status, uint256 yesPool, uint256 noPool, uint256 resolvedAt)",
+  "function getMarket(uint256 marketId) view returns ((uint256 id, string asset, string question, uint256 targetPrice, uint256 createdPrice, uint256 deadline, uint8 status, uint256 yesPool, uint256 noPool, uint256 resolvedAt))",
 
   // Returns the Bet struct for a user on a given market
   // Side enum: 0=YES, 1=NO

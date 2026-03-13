@@ -63,13 +63,19 @@ export default function HistoryPage() {
       const all = await Promise.all(ids.map(async (id): Promise<HM|null> => {
         try {
           const raw    = await c.getMarket(id);
-          const status = mapStatus(Number(raw.status));
+          const r      = raw[0] !== undefined ? raw : raw; // tuple or named
+          const status = mapStatus(Number(r[6] ?? r.status));
           const m: HM  = {
-            id: raw.id, asset: raw.asset as AssetSymbol, question: raw.question,
-            targetPrice: raw.targetPrice, currentPrice: raw.createdPrice,
-            deadline: Number(raw.deadline), status,
-            yesPool: raw.yesPool, noPool: raw.noPool, totalPool: raw.yesPool + raw.noPool,
-            resolvedAt: Number(raw.resolvedAt) || undefined,
+            id: r[0] ?? r.id,
+            asset: (r[1] ?? r.asset) as AssetSymbol,
+            question: r[2] ?? r.question,
+            targetPrice: r[3] ?? r.targetPrice,
+            currentPrice: r[4] ?? r.createdPrice,
+            deadline: Number(r[5] ?? r.deadline), status,
+            yesPool: r[7] ?? r.yesPool,
+            noPool: r[8] ?? r.noPool,
+            totalPool: (r[7] ?? r.yesPool) + (r[8] ?? r.noPool),
+            resolvedAt: Number(r[9] ?? r.resolvedAt) || undefined,
             winner: status === "RESOLVED_YES" ? "YES" : status === "RESOLVED_NO" ? "NO" : undefined,
             createdAt: 0,
           };

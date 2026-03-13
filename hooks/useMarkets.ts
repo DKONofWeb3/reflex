@@ -15,14 +15,25 @@ function mapStatus(n: number): MarketStatus {
   return (["ACTIVE","RESOLVED_YES","RESOLVED_NO","EXPIRED"] as MarketStatus[])[n] ?? "ACTIVE";
 }
 function parseMarket(raw: any): Market | null {
-  if (!raw || raw.id === 0n) return null;
-  const status = mapStatus(Number(raw.status));
+  if (!raw || raw[0] === 0n) return null;
+  // Struct returned as tuple — access by index or name
+  const id           = raw[0] ?? raw.id;
+  const asset        = raw[1] ?? raw.asset;
+  const question     = raw[2] ?? raw.question;
+  const targetPrice  = raw[3] ?? raw.targetPrice;
+  const createdPrice = raw[4] ?? raw.createdPrice;
+  const deadline     = raw[5] ?? raw.deadline;
+  const status       = mapStatus(Number(raw[6] ?? raw.status));
+  const yesPool      = raw[7] ?? raw.yesPool;
+  const noPool       = raw[8] ?? raw.noPool;
+  const resolvedAt   = raw[9] ?? raw.resolvedAt;
+  if (!id || id === 0n) return null;
   return {
-    id: raw.id, asset: raw.asset as AssetSymbol, question: raw.question,
-    targetPrice: raw.targetPrice, currentPrice: raw.createdPrice,
-    deadline: Number(raw.deadline), status,
-    yesPool: raw.yesPool, noPool: raw.noPool, totalPool: raw.yesPool + raw.noPool,
-    resolvedAt: Number(raw.resolvedAt) || undefined,
+    id, asset: asset as AssetSymbol, question,
+    targetPrice, currentPrice: createdPrice,
+    deadline: Number(deadline), status,
+    yesPool, noPool, totalPool: yesPool + noPool,
+    resolvedAt: Number(resolvedAt) || undefined,
     winner: status === "RESOLVED_YES" ? "YES" : status === "RESOLVED_NO" ? "NO" : undefined,
     createdAt: 0,
   };
