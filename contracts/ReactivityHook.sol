@@ -69,6 +69,11 @@ interface IPredictionMarket {
     );
 }
 
+// Minimal interface to read price from PriceFeed contracts
+interface IPriceFeed {
+    function getPrice() external view returns (uint256 price, uint256 timestamp);
+}
+
 contract ReactivityHook is SomniaEventHandler {
 
     // ─── Constants ────────────────────────────────────────────────────────────
@@ -380,6 +385,21 @@ contract ReactivityHook is SomniaEventHandler {
     address public ethFeed;
     address public btcFeed;
     address public somiFeed;
+
+    // ─── Manual trigger (owner-only fallback) ─────────────────────────────────
+    // Allows the owner to manually trigger market creation + resolution for an
+    // asset. Used as a demo fallback when Somnia Reactivity testnet is flaky.
+    function manualTrigger(string calldata asset) external onlyOwner {
+        address feed;
+        if      (keccak256(bytes(asset)) == keccak256("ETH"))  feed = ethFeed;
+        else if (keccak256(bytes(asset)) == keccak256("BTC"))  feed = btcFeed;
+        else if (keccak256(bytes(asset)) == keccak256("SOMI")) feed = somiFeed;
+        else revert("Unknown asset");
+
+        (uint256 currentPrice, ) = IPriceFeed(feed).getPrice();
+        _checkAndResolveMarket(asset, currentPrice);
+        _checkAndCreateMarket(asset, currentPrice);
+    }
 
     function setFeeds(address eth_, address btc_, address somi_) external onlyOwner {
         ethFeed  = eth_;
