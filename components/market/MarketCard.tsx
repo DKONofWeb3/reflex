@@ -164,21 +164,7 @@ function LiveTicker({ side }: { side: "yes"|"no" }) {
 // ─── Main card ────────────────────────────────────────────────────────────────
 interface Props { asset: AssetSymbol; market: Market | null; price: PriceData | null; }
 
-function parseContractError(e: any): string {
-  const msg: string = e?.reason || e?.message || "";
-  if (msg.includes("DeadlinePassed"))    return "This market has ended — betting is closed.";
-  if (msg.includes("DeadlineNotPassed")) return "Market hasn't expired yet.";
-  if (msg.includes("MarketNotActive"))   return "This market is no longer active.";
-  if (msg.includes("AlreadyBet"))        return "You've already placed a bet on this market.";
-  if (msg.includes("BetTooSmall"))       return "Bet too small — minimum is 0.001 STT.";
-  if (msg.includes("NothingToClaim"))    return "Nothing to claim on this market.";
-  if (msg.includes("insufficient funds") || msg.includes("InsufficientBalance"))
-    return "Insufficient STT balance. Get testnet STT from the Somnia faucet.";
-  if (msg.includes("user rejected") || msg.includes("User denied"))
-    return "Transaction cancelled.";
-  if (msg.includes("execution reverted")) return "Transaction failed — the market may have expired.";
-  return msg.slice(0, 100) || "Transaction failed.";
-}
+
 
 export function MarketCard({ asset, market, price }: Props) {
   const { wallet: { wallet }, markets: { placeBet } } = useAppContext();
