@@ -1,12 +1,9 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
-import * as path from "path";
 
-// Try loading .env.local first (Next.js convention), then fall back to .env
-// Both are in the project root directory
-dotenv.config({ path: path.resolve(__dirname, ".env.local") });
-dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 

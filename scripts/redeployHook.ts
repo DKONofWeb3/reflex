@@ -1,9 +1,4 @@
 // scripts/redeployHook.ts
-// Run: npx hardhat run scripts/redeployHook.ts --network somnia
-//
-// This redeploys ONLY the ReactivityHook (with the new manualTrigger function),
-// then updates PredictionMarket to point to the new hook, and re-subscribes.
-
 import { ethers } from "hardhat";
 
 const PREDICTION_MARKET = "0xC2D7Cea4DD1F24f17fb25312383e8f305bD4654C";
@@ -17,19 +12,24 @@ async function main() {
 
   // 1. Deploy new ReactivityHook
   const Hook = await ethers.getContractFactory("ReactivityHook");
-  const hook = await Hook.deploy(PREDICTION_MARKET, ETH_FEED, BTC_FEED, SOMI_FEED);
+  const hook = await Hook.deploy(PREDICTION_MARKET);
   await hook.waitForDeployment();
   const hookAddr = await hook.getAddress();
   console.log("✓ New ReactivityHook:", hookAddr);
 
-  // 2. Tell PredictionMarket about the new hook
+  // 2. Set price feeds
+  await (await hook.setFeeds(ETH_FEED, BTC_FEED, SOMI_FEED)).wait();
+  console.log("✓ Feeds set");
+
+  // 3. Tell PredictionMarket about the new hook
   const PM_ABI = ["function setHook(address hook_)"];
   const pm = new ethers.Contract(PREDICTION_MARKET, PM_ABI, deployer);
   await (await pm.setHook(hookAddr)).wait();
   console.log("✓ PredictionMarket hook updated");
 
-  console.log("\n── Update lib/config.ts: REACTIVITY_HOOK →", hookAddr);
-  console.log("── Then run: npx hardhat run scripts/subscribe.ts --network somnia");
+  console.log("\n── Copy this address into lib/config.ts REACTIVITY_HOOK:");
+  console.log("   ", hookAddr);
+  console.log("\n── Then run: set \"TS_NODE_PROJECT=tsconfig.hardhat.json\" && npx hardhat run scripts/subscribe.ts --network somnia");
 }
 
 main().catch(console.error);

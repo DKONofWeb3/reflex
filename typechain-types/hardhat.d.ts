@@ -26,6 +26,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IPredictionMarket__factory>;
     getContractFactory(
+      name: "IPriceFeed",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IPriceFeed__factory>;
+    getContractFactory(
       name: "ReactivityHook",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ReactivityHook__factory>;
@@ -50,6 +54,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IPredictionMarket>;
     getContractAt(
+      name: "IPriceFeed",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IPriceFeed>;
+    getContractAt(
       name: "ReactivityHook",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -73,6 +82,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IPredictionMarket>;
     deployContract(
+      name: "IPriceFeed",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IPriceFeed>;
+    deployContract(
       name: "ReactivityHook",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ReactivityHook>;
@@ -96,6 +109,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IPredictionMarket>;
+    deployContract(
+      name: "IPriceFeed",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IPriceFeed>;
     deployContract(
       name: "ReactivityHook",
       args: any[],

@@ -2,5 +2,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { IPredictionMarket } from "./IPredictionMarket";
+export type { IPriceFeed } from "./IPriceFeed";
 export type { ReactivityHook } from "./ReactivityHook";
 export type { SomniaEventHandler } from "./SomniaEventHandler";

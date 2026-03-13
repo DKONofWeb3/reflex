@@ -10,6 +10,8 @@ export { PredictionMarket__factory } from "./factories/PredictionMarket__factory
 export { PriceFeed__factory } from "./factories/PriceFeed__factory";
 export type { IPredictionMarket } from "./ReactivityHook.sol/IPredictionMarket";
 export { IPredictionMarket__factory } from "./factories/ReactivityHook.sol/IPredictionMarket__factory";
+export type { IPriceFeed } from "./ReactivityHook.sol/IPriceFeed";
+export { IPriceFeed__factory } from "./factories/ReactivityHook.sol/IPriceFeed__factory";
 export type { ReactivityHook } from "./ReactivityHook.sol/ReactivityHook";
 export { ReactivityHook__factory } from "./factories/ReactivityHook.sol/ReactivityHook__factory";
 export type { SomniaEventHandler } from "./ReactivityHook.sol/SomniaEventHandler";

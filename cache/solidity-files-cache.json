@@ -74,8 +74,8 @@
       ]
     },
     "C:\\Users\\DELL\\Documents\\KonOfWeb3\\reflex\\contracts\\ReactivityHook.sol": {
-      "lastModificationDate": 1773183220150,
-      "contentHash": "ac9b273658e2cbfc8bd6ae96cbe257a9",
+      "lastModificationDate": 1773364246778,
+      "contentHash": "9a369a440a125f59fe0f9e53b554a643",
       "sourceName": "contracts/ReactivityHook.sol",
       "solcConfig": {
         "version": "0.8.24",
@@ -107,6 +107,7 @@
       ],
       "artifacts": [
         "IPredictionMarket",
+        "IPriceFeed",
         "ReactivityHook",
         "SomniaEventHandler"
       ]

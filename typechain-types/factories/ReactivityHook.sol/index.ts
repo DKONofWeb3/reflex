@@ -2,5 +2,6 @@
 /* tslint:disable */
 /* eslint-disable */
 export { IPredictionMarket__factory } from "./IPredictionMarket__factory";
+export { IPriceFeed__factory } from "./IPriceFeed__factory";
 export { ReactivityHook__factory } from "./ReactivityHook__factory";
 export { SomniaEventHandler__factory } from "./SomniaEventHandler__factory";

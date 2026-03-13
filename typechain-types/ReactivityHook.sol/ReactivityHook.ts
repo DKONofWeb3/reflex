@@ -68,6 +68,7 @@ export interface ReactivityHookInterface extends Interface {
       | "getSmartBet"
       | "getUserSmartBets"
       | "lastMilestone"
+      | "manualTrigger"
       | "nextSmartBetId"
       | "onEvent"
       | "owner"
@@ -129,6 +130,10 @@ export interface ReactivityHookInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "lastMilestone",
+    values: [string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "manualTrigger",
     values: [string]
   ): string;
   encodeFunctionData(
@@ -207,6 +212,10 @@ export interface ReactivityHookInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "lastMilestone",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "manualTrigger",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -444,6 +453,8 @@ export interface ReactivityHook extends BaseContract {
 
   lastMilestone: TypedContractMethod<[arg0: string], [bigint], "view">;
 
+  manualTrigger: TypedContractMethod<[asset: string], [void], "nonpayable">;
+
   nextSmartBetId: TypedContractMethod<[], [bigint], "view">;
 
   onEvent: TypedContractMethod<
@@ -546,6 +557,9 @@ export interface ReactivityHook extends BaseContract {
   getFunction(
     nameOrSignature: "lastMilestone"
   ): TypedContractMethod<[arg0: string], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "manualTrigger"
+  ): TypedContractMethod<[asset: string], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "nextSmartBetId"
   ): TypedContractMethod<[], [bigint], "view">;
