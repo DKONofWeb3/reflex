@@ -6,6 +6,46 @@ import { ASSETS, AssetSymbol } from "@/lib/config";
 import { Market, PriceData }   from "@/types";
 import { useAppContext }        from "@/app/providers";
 
+// ─── Custom error decoder ────────────────────────────────────────────────────
+const CONTRACT_ERRORS: Record<string, string> = {
+  "0x63c2f78b": "This market is no longer active.",
+  "0x70f65ca3": "This market has already ended.",
+  "0x070f65ca": "This market has already ended.",
+  "0x2486b972": "You already placed a bet on this market.",
+  "0xaa90d041": "Bet amount is below the minimum (0.001 STT).",
+  "0xec126852": "The market deadline has passed.",
+  "0xfd353f1c": "Nothing to claim on this market.",
+  "0x8a462282": "A market for this asset is already active.",
+};
+
+function parseContractError(e: any): string {
+  const msg: string = e?.message || e?.reason || "";
+  // Check data field for 4-byte selector
+  const data: string = e?.data || e?.info?.error?.data || "";
+  if (data) {
+    const sel = data.slice(0, 10).toLowerCase();
+    if (CONTRACT_ERRORS[sel]) return CONTRACT_ERRORS[sel];
+  }
+  // Fallback string matching
+  if (msg.includes("DeadlinePassed") || msg.includes("Ended") || msg.includes("deadline"))
+    return "This market has already ended.";
+  if (msg.includes("MarketNotActive") || msg.includes("not active"))
+    return "This market is no longer active.";
+  if (msg.includes("AlreadyBet") || msg.includes("already"))
+    return "You already placed a bet on this market.";
+  if (msg.includes("BetTooSmall") || msg.includes("too small"))
+    return "Bet amount is below the minimum (0.001 STT).";
+  if (msg.includes("insufficient funds") || msg.includes("exceeds balance"))
+    return "Insufficient STT balance.";
+  if (msg.includes("user rejected") || msg.includes("ACTION_REJECTED"))
+    return "Transaction cancelled.";
+  if (msg.includes("execution reverted"))
+    return "Transaction failed — the market may have ended.";
+  return "Something went wrong. Please try again.";
+}
+
+
+
 // ─── Inline SVG logos — zero network dependency, always render ───────────────
 function LogoETH({ size }: { size: number }) {
   return (
@@ -124,6 +164,22 @@ function LiveTicker({ side }: { side: "yes"|"no" }) {
 // ─── Main card ────────────────────────────────────────────────────────────────
 interface Props { asset: AssetSymbol; market: Market | null; price: PriceData | null; }
 
+function parseContractError(e: any): string {
+  const msg: string = e?.reason || e?.message || "";
+  if (msg.includes("DeadlinePassed"))    return "This market has ended — betting is closed.";
+  if (msg.includes("DeadlineNotPassed")) return "Market hasn't expired yet.";
+  if (msg.includes("MarketNotActive"))   return "This market is no longer active.";
+  if (msg.includes("AlreadyBet"))        return "You've already placed a bet on this market.";
+  if (msg.includes("BetTooSmall"))       return "Bet too small — minimum is 0.001 STT.";
+  if (msg.includes("NothingToClaim"))    return "Nothing to claim on this market.";
+  if (msg.includes("insufficient funds") || msg.includes("InsufficientBalance"))
+    return "Insufficient STT balance. Get testnet STT from the Somnia faucet.";
+  if (msg.includes("user rejected") || msg.includes("User denied"))
+    return "Transaction cancelled.";
+  if (msg.includes("execution reverted")) return "Transaction failed — the market may have expired.";
+  return msg.slice(0, 100) || "Transaction failed.";
+}
+
 export function MarketCard({ asset, market, price }: Props) {
   const { wallet: { wallet }, markets: { placeBet } } = useAppContext();
 
@@ -131,6 +187,7 @@ export function MarketCard({ asset, market, price }: Props) {
   const [betting, setBetting] = useState<"YES"|"NO"|null>(null);
   const [txHash,  setTxHash]  = useState<string|null>(null);
   const [error,   setError]   = useState<string|null>(null);
+  const [toast,   setToast]   = useState<string|null>(null);
   const [showAmt, setShowAmt] = useState(false);
   const [, setTick] = useState(0);
 
@@ -166,7 +223,10 @@ export function MarketCard({ asset, market, price }: Props) {
     try {
       setTxHash(await placeBet(market.id, side, amount));
     } catch (e: any) {
-      setError(e?.reason || e?.message?.slice(0, 80) || "Transaction failed");
+      const msg = parseContractError(e);
+      setError(null);
+      setToast(msg);
+      setTimeout(() => setToast(null), 5000);
     } finally { setBetting(null); }
   };
 
@@ -180,6 +240,7 @@ export function MarketCard({ asset, market, price }: Props) {
       display: "flex", flexDirection: "column",
       boxShadow: "0 2px 16px rgba(0,0,0,0.22)",
       transition: "border-color 0.15s, box-shadow 0.15s",
+      position: "relative",
     }}
     onMouseEnter={(e) => {
       if (!isRes) { e.currentTarget.style.borderColor = "var(--card-bd-hover)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,0,0,0.35)"; }
@@ -323,7 +384,7 @@ export function MarketCard({ asset, market, price }: Props) {
                     }}
                   />
                 </div>
-                {error  && <p style={{ fontSize: 11, color: "#F87171" }}>{error}</p>}
+
                 {txHash && <a href={"https://shannon-explorer.somnia.network/tx/" + txHash}
                   target="_blank" style={{ fontSize: 11, color: "#60A5FA" }}>✓ Bet confirmed ↗</a>}
               </div>
@@ -344,6 +405,30 @@ export function MarketCard({ asset, market, price }: Props) {
           </>
         )}
       </div>
+
+      {/* Toast notification */}
+      {toast && (
+        <div style={{
+          position: "absolute", bottom: 52, left: 12, right: 12, zIndex: 10,
+          background: "#1E1128", border: "1px solid rgba(239,68,68,0.35)",
+          borderRadius: 8, padding: "10px 12px",
+          display: "flex", alignItems: "flex-start", gap: 8,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          animation: "slide-up 0.2s ease",
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="#F87171" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}>
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span style={{ fontSize: 12, color: "#FCA5A5", flex: 1, lineHeight: 1.4 }}>{toast}</span>
+          <button onClick={() => setToast(null)} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: "rgba(255,255,255,0.3)", fontSize: 16, lineHeight: 1, flexShrink: 0,
+          }}>×</button>
+        </div>
+      )}
 
       {/* FOOTER */}
       <div style={{
