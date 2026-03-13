@@ -7,7 +7,6 @@ import { REACTIVITY_HOOK_ABI } from "@/lib/abis/ReactivityHook.abi";
 import { getSigner } from "@/lib/provider";
 import { useAppContext } from "@/app/providers";
 
-// Inline SVG logos — no CDN dependency
 function CoinIcon({ asset, size = 20 }: { asset: AssetSymbol; size?: number }) {
   if (asset === "ETH") return (
     <svg width={size} height={size} viewBox="0 0 32 32">
@@ -34,51 +33,73 @@ function CoinIcon({ asset, size = 20 }: { asset: AssetSymbol; size?: number }) {
   );
 }
 
-type Phase = "idle" | "pushed" | "created";
+type Phase = "idle" | "pushing" | "creating" | "done" | "error";
 
 export function PriceUpdater() {
   const { priceFeed: { prices, updatePrice }, wallet: { wallet } } = useAppContext();
-  const [asset,  setAsset]  = useState<AssetSymbol>("ETH");
-  const [price,  setPrice]  = useState("");
-  const [busy,   setBusy]   = useState(false);
-  const [phase,  setPhase]  = useState<Phase>("idle");
+  const [asset,      setAsset]      = useState<AssetSymbol>("ETH");
+  const [price,      setPrice]      = useState("");
+  const [phase,      setPhase]      = useState<Phase>("idle");
   const [pushHash,   setPushHash]   = useState<string | null>(null);
   const [createHash, setCreateHash] = useState<string | null>(null);
-  const [err,    setErr]    = useState<string | null>(null);
+  const [statusMsg,  setStatusMsg]  = useState<string>("");
+  const [err,        setErr]        = useState<string | null>(null);
 
   const current = prices[asset]
     ? prices[asset]!.displayPrice.toFixed(ASSETS[asset].decimals)
     : "—";
 
-  const handlePush = async () => {
+  const busy = phase === "pushing" || phase === "creating";
+
+  const handleLaunch = async () => {
     if (!price || !wallet.isConnected) return;
-    setBusy(true); setErr(null); setPushHash(null); setCreateHash(null); setPhase("idle");
+    setErr(null); setPushHash(null); setCreateHash(null);
+
+    // ── Step 1: Push price ────────────────────────────────────────────────────
+    setPhase("pushing");
+    setStatusMsg("Pushing price on-chain…");
+    let pushTxHash: string;
     try {
-      const hash = await updatePrice(asset, parseFloat(price));
-      setPushHash(hash);
-      setPhase("pushed");
+      pushTxHash = await updatePrice(asset, parseFloat(price));
+      setPushHash(pushTxHash);
       setPrice("");
     } catch (e: any) {
-      setErr(e?.reason || e?.message?.slice(0, 90) || "Transaction failed");
-    } finally { setBusy(false); }
-  };
+      setErr(e?.reason || e?.message?.slice(0, 90) || "Price push failed");
+      setPhase("error");
+      return;
+    }
 
-  const handleCreate = async () => {
-    setBusy(true); setErr(null);
+    // ── Step 2: Create market ─────────────────────────────────────────────────
+    setPhase("creating");
+    setStatusMsg("Creating prediction market…");
     try {
       const signer = await getSigner();
       const hook   = new ethers.Contract(CONTRACTS.REACTIVITY_HOOK, REACTIVITY_HOOK_ABI, signer);
       const tx     = await hook.manualTrigger(asset);
       const receipt = await tx.wait();
       setCreateHash(receipt.hash);
-      setPhase("created");
+      setPhase("done");
+      setStatusMsg("");
     } catch (e: any) {
-      setErr(e?.reason || e?.message?.slice(0, 90) || "Create market failed");
-    } finally { setBusy(false); }
+      // Market may already be active — that's fine, price was still pushed
+      const msg: string = e?.message || "";
+      if (msg.includes("MarketAlreadyActive") || msg.includes("already")) {
+        setPhase("done");
+        setStatusMsg("Market already active — place your bets!");
+      } else {
+        setErr(e?.reason || e?.message?.slice(0, 90) || "Market creation failed");
+        setPhase("error");
+      }
+    }
   };
 
-  const step1Done = phase === "pushed" || phase === "created";
-  const step2Done = phase === "created";
+  const reset = () => {
+    setPhase("idle"); setPushHash(null); setCreateHash(null);
+    setErr(null); setStatusMsg("");
+  };
+
+  const step1Done = phase === "creating" || phase === "done";
+  const step2Done = phase === "done";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -93,17 +114,17 @@ export function PriceUpdater() {
           Trigger Reactivity
         </div>
         <p style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.5 }}>
-          Push a new price on-chain. The Reactivity hook detects it and
-          auto-creates a prediction market with zero human intervention.
+          Push a price on-chain → Somnia Reactivity detects it → prediction
+          market auto-creates. One click does it all.
         </p>
       </div>
 
       {/* Step indicator */}
       <div style={{ display: "flex", alignItems: "center" }}>
         {[
-          { n: 1, label: "Push price",     done: step1Done },
-          { n: 2, label: "Create market",  done: step2Done },
-          { n: 3, label: "Bet & resolve",  done: false      },
+          { n: 1, label: "Push price",    done: step1Done },
+          { n: 2, label: "Create market", done: step2Done },
+          { n: 3, label: "Bet & resolve", done: false      },
         ].map(({ n, label, done }, i) => (
           <div key={n} style={{ display: "flex", alignItems: "center", flex: 1 }}>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flex: 1 }}>
@@ -133,7 +154,7 @@ export function PriceUpdater() {
       {/* Asset selector */}
       <div style={{ display: "flex", gap: 5 }}>
         {(["ETH","BTC","SOMI"] as AssetSymbol[]).map((a) => (
-          <button key={a} onClick={() => { setAsset(a); setPhase("idle"); setErr(null); }} style={{
+          <button key={a} onClick={() => { setAsset(a); reset(); }} style={{
             flex: 1, display: "flex", flexDirection: "column",
             alignItems: "center", gap: 5, padding: "8px 4px",
             borderRadius: 8, cursor: "pointer", border: "1px solid",
@@ -148,106 +169,92 @@ export function PriceUpdater() {
         ))}
       </div>
 
-      {/* Price input */}
-      <div style={{ background: "var(--border-soft)", borderRadius: 8,
-        padding: "10px 12px", border: "1px solid var(--border)" }}>
-        <div style={{ fontSize: 11, color: "var(--t4)", marginBottom: 6 }}>
-          Current on-chain:{" "}
-          <span style={{ fontFamily: "'JetBrains Mono', monospace",
-            color: "var(--t2)", fontWeight: 600 }}>${current}</span>
-        </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          <div style={{ flex: 1, display: "flex", borderRadius: 7, overflow: "hidden",
-            border: "1px solid var(--border)", background: "var(--surface)" }}>
-            <span style={{ padding: "0 10px", fontSize: 12, color: "var(--t4)",
-              display: "flex", alignItems: "center",
-              borderRight: "1px solid var(--border)" }}>$</span>
-            <input
-              type="number" value={price} placeholder="New price"
-              onChange={(e) => setPrice(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handlePush()}
-              style={{ flex: 1, background: "transparent", border: "none", outline: "none",
-                padding: "9px 10px", color: "var(--t1)", fontSize: 13,
-                fontFamily: "'JetBrains Mono', monospace" }}
-            />
+      {/* Price input + Launch button */}
+      {(phase === "idle" || phase === "error") && (
+        <div style={{ background: "var(--border-soft)", borderRadius: 8,
+          padding: "10px 12px", border: "1px solid var(--border)" }}>
+          <div style={{ fontSize: 11, color: "var(--t4)", marginBottom: 6 }}>
+            Current on-chain:{" "}
+            <span style={{ fontFamily: "'JetBrains Mono', monospace",
+              color: "var(--t2)", fontWeight: 600 }}>${current}</span>
           </div>
-          <button onClick={handlePush}
-            disabled={busy || !price || !wallet.isConnected}
-            style={{
-              padding: "0 14px", borderRadius: 7, border: "none",
-              background: busy ? "rgba(110,63,243,0.4)" : "#6E3FF3",
-              color: "#fff", fontSize: 13, fontWeight: 600,
-              cursor: (busy || !price || !wallet.isConnected) ? "not-allowed" : "pointer",
-              opacity: (!price || !wallet.isConnected) ? 0.5 : 1,
-              whiteSpace: "nowrap", transition: "background 0.12s",
-              display: "flex", alignItems: "center", gap: 6,
-            }}>
-            {busy && phase === "idle" ? "Pushing…" : "Push ⚡"}
-          </button>
-        </div>
-      </div>
-
-      {/* Step 1 success → show Create Market button */}
-      {phase === "pushed" && (
-        <div style={{ padding: "10px 12px", borderRadius: 8,
-          background: "rgba(110,63,243,0.06)", border: "1px solid rgba(110,63,243,0.2)" }}>
-          <div style={{ fontSize: 11, color: "#6E3FF3", fontWeight: 600, marginBottom: 6 }}>
-            ⚡ Price pushed on-chain
+          <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ flex: 1, display: "flex", borderRadius: 7, overflow: "hidden",
+              border: "1px solid var(--border)", background: "var(--surface)" }}>
+              <span style={{ padding: "0 10px", fontSize: 12, color: "var(--t4)",
+                display: "flex", alignItems: "center",
+                borderRight: "1px solid var(--border)" }}>$</span>
+              <input
+                type="number" value={price} placeholder="New price"
+                onChange={(e) => setPrice(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLaunch()}
+                style={{ flex: 1, background: "transparent", border: "none", outline: "none",
+                  padding: "9px 10px", color: "var(--t1)", fontSize: 13,
+                  fontFamily: "'JetBrains Mono', monospace" }}
+              />
+            </div>
+            <button onClick={handleLaunch}
+              disabled={!price || !wallet.isConnected}
+              style={{
+                padding: "0 14px", borderRadius: 7, border: "none",
+                background: "#6E3FF3", color: "#fff", fontSize: 13, fontWeight: 600,
+                cursor: (!price || !wallet.isConnected) ? "not-allowed" : "pointer",
+                opacity: (!price || !wallet.isConnected) ? 0.5 : 1,
+                whiteSpace: "nowrap",
+              }}>
+              Launch ⚡
+            </button>
           </div>
-          <div style={{ fontSize: 11, color: "var(--t3)", marginBottom: 10 }}>
-            Reactivity should auto-create the market. If it doesn't appear in
-            ~10 seconds, click below to create it manually.
-          </div>
-          <button onClick={handleCreate} disabled={busy} style={{
-            width: "100%", padding: "9px 0", borderRadius: 7, border: "none",
-            background: busy ? "rgba(110,63,243,0.4)" : "#6E3FF3",
-            color: "#fff", fontSize: 13, fontWeight: 600,
-            cursor: busy ? "not-allowed" : "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          }}>
-            {busy ? (
-              <>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                  stroke="white" strokeWidth="2.5" style={{ animation: "spin 0.7s linear infinite" }}>
-                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/>
-                </svg>
-                Creating…
-              </>
-            ) : "Create Market →"}
-          </button>
-          <a href={`https://shannon-explorer.somnia.network/tx/${pushHash}`}
-            target="_blank" style={{ display: "block", fontSize: 11,
-              color: "var(--t4)", marginTop: 8, textAlign: "center" }}>
-            View price tx ↗
-          </a>
+          {err && (
+            <p style={{ fontSize: 11, color: "#F87171", marginTop: 6 }}>{err}</p>
+          )}
         </div>
       )}
 
-      {/* Step 2 success */}
-      {phase === "created" && (
+      {/* In-progress state */}
+      {(phase === "pushing" || phase === "creating") && (
+        <div style={{ padding: "12px", borderRadius: 8,
+          background: "rgba(110,63,243,0.06)", border: "1px solid rgba(110,63,243,0.2)",
+          display: "flex", alignItems: "center", gap: 10 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="#6E3FF3" strokeWidth="2.5"
+            style={{ animation: "spin 0.7s linear infinite", flexShrink: 0 }}>
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/>
+          </svg>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#6E3FF3" }}>{statusMsg}</div>
+            <div style={{ fontSize: 11, color: "var(--t4)", marginTop: 2 }}>
+              {phase === "pushing" ? "Confirm in your wallet…" : "Waiting for confirmation…"}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Done state */}
+      {phase === "done" && (
         <div style={{ padding: "10px 12px", borderRadius: 8,
           background: "rgba(22,163,74,0.07)", border: "1px solid rgba(22,163,74,0.25)" }}>
-          <div style={{ fontSize: 11, color: "#16A34A", fontWeight: 600, marginBottom: 4 }}>
-            ✓ Market created — place your bets!
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#22C55E", marginBottom: 6 }}>
+            ✓ Market is live — place your bets!
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {pushHash && (
-              <a href={`https://shannon-explorer.somnia.network/tx/${pushHash}`}
+              <a href={"https://shannon-explorer.somnia.network/tx/" + pushHash}
                 target="_blank" style={{ fontSize: 11, color: "var(--t4)" }}>
-                Price push tx ↗
+                Price tx ↗
               </a>
             )}
             {createHash && (
-              <a href={`https://shannon-explorer.somnia.network/tx/${createHash}`}
-                target="_blank" style={{ fontSize: 11, color: "#16A34A" }}>
+              <a href={"https://shannon-explorer.somnia.network/tx/" + createHash}
+                target="_blank" style={{ fontSize: 11, color: "#22C55E" }}>
                 Market created tx ↗
               </a>
             )}
           </div>
-          <button onClick={() => { setPhase("idle"); setPushHash(null); setCreateHash(null); }}
+          <button onClick={reset}
             style={{ marginTop: 8, fontSize: 11, color: "var(--t4)", background: "none",
               border: "none", cursor: "pointer", padding: 0 }}>
-            Push another price →
+            Launch another →
           </button>
         </div>
       )}
@@ -257,8 +264,6 @@ export function PriceUpdater() {
           Connect wallet to push prices
         </p>
       )}
-      {err && <p style={{ fontSize: 11, color: "#DC2626" }}>{err}</p>}
-
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
