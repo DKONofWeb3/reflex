@@ -387,8 +387,7 @@ contract ReactivityHook is SomniaEventHandler {
     address public somiFeed;
 
     // ─── Manual trigger (owner-only fallback) ─────────────────────────────────
-    // Allows the owner to manually trigger market creation + resolution for an
-    // asset. Used as a demo fallback when Somnia Reactivity testnet is flaky.
+    // Bypasses milestone checks — directly creates a market for demo purposes.
     function manualTrigger(string calldata asset) external onlyOwner {
         address feed;
         if      (keccak256(bytes(asset)) == keccak256("ETH"))  feed = ethFeed;
@@ -397,8 +396,33 @@ contract ReactivityHook is SomniaEventHandler {
         else revert("Unknown asset");
 
         (uint256 currentPrice, ) = IPriceFeed(feed).getPrice();
+
+        // Resolve any existing expired market first
         _checkAndResolveMarket(asset, currentPrice);
-        _checkAndCreateMarket(asset, currentPrice);
+
+        // Skip if already has an active market
+        if (predictionMarket.getActiveMarketId(asset) != 0) return;
+
+        // Calculate target — handle case where price < milestone step (e.g. SOMI $1.90 < $5)
+        uint256 step = _getMilestoneStep(asset);
+        uint256 milestone;
+        uint256 targetPrice;
+        if (step > 0 && currentPrice >= step) {
+            milestone   = (currentPrice / step) * step;
+            targetPrice = milestone + step;
+        } else {
+            // Price below first milestone step — use 10% above current as target
+            milestone   = 0;
+            targetPrice = currentPrice + (currentPrice / 10) + 1;
+        }
+
+        string memory question = _buildQuestion(asset, targetPrice);
+        lastMilestone[asset] = milestone;
+
+        uint256 marketId = predictionMarket.createMarket(
+            asset, question, targetPrice, currentPrice, MARKET_DURATION
+        );
+        emit MarketAutoCreated(marketId, asset, targetPrice);
     }
 
     function setFeeds(address eth_, address btc_, address somi_) external onlyOwner {
