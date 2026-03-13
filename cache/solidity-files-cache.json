@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\DELL\\Documents\\KonOfWeb3\\reflex\\contracts\\PredictionMarket.sol": {
-      "lastModificationDate": 1773183220267,
-      "contentHash": "267c682260debbe46725cffe8fb3a5e9",
+      "lastModificationDate": 1773431006806,
+      "contentHash": "5deb70dcc237f66444c10d6ea6abc38d",
       "sourceName": "contracts/PredictionMarket.sol",
       "solcConfig": {
         "version": "0.8.24",

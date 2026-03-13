@@ -253,8 +253,14 @@ contract PredictionMarket {
 
     // ─── View Functions ───────────────────────────────────────────────────────
 
-    function getMarket(uint256 marketId) external view returns (Market memory) {
-        return markets[marketId];
+    function getMarket(uint256 marketId) external view returns (
+        uint256 id, string memory asset, string memory question,
+        uint256 targetPrice, uint256 createdPrice, uint256 deadline,
+        uint8 status, uint256 yesPool, uint256 noPool, uint256 resolvedAt
+    ) {
+        Market storage m = markets[marketId];
+        return (m.id, m.asset, m.question, m.targetPrice, m.createdPrice,
+                m.deadline, uint8(m.status), m.yesPool, m.noPool, m.resolvedAt);
     }
 
     function getUserBet(uint256 marketId, address user) external view returns (Bet memory) {

@@ -24,43 +24,6 @@ import type {
 } from "./common";
 
 export declare namespace PredictionMarket {
-  export type MarketStruct = {
-    id: BigNumberish;
-    asset: string;
-    question: string;
-    targetPrice: BigNumberish;
-    createdPrice: BigNumberish;
-    deadline: BigNumberish;
-    status: BigNumberish;
-    yesPool: BigNumberish;
-    noPool: BigNumberish;
-    resolvedAt: BigNumberish;
-  };
-
-  export type MarketStructOutput = [
-    id: bigint,
-    asset: string,
-    question: string,
-    targetPrice: bigint,
-    createdPrice: bigint,
-    deadline: bigint,
-    status: bigint,
-    yesPool: bigint,
-    noPool: bigint,
-    resolvedAt: bigint
-  ] & {
-    id: bigint;
-    asset: string;
-    question: string;
-    targetPrice: bigint;
-    createdPrice: bigint;
-    deadline: bigint;
-    status: bigint;
-    yesPool: bigint;
-    noPool: bigint;
-    resolvedAt: bigint;
-  };
-
   export type BetStruct = {
     side: BigNumberish;
     amount: BigNumberish;
@@ -378,7 +341,31 @@ export interface PredictionMarket extends BaseContract {
 
   getMarket: TypedContractMethod<
     [marketId: BigNumberish],
-    [PredictionMarket.MarketStructOutput],
+    [
+      [
+        bigint,
+        string,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint
+      ] & {
+        id: bigint;
+        asset: string;
+        question: string;
+        targetPrice: bigint;
+        createdPrice: bigint;
+        deadline: bigint;
+        status: bigint;
+        yesPool: bigint;
+        noPool: bigint;
+        resolvedAt: bigint;
+      }
+    ],
     "view"
   >;
 
@@ -486,7 +473,31 @@ export interface PredictionMarket extends BaseContract {
     nameOrSignature: "getMarket"
   ): TypedContractMethod<
     [marketId: BigNumberish],
-    [PredictionMarket.MarketStructOutput],
+    [
+      [
+        bigint,
+        string,
+        string,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint
+      ] & {
+        id: bigint;
+        asset: string;
+        question: string;
+        targetPrice: bigint;
+        createdPrice: bigint;
+        deadline: bigint;
+        status: bigint;
+        yesPool: bigint;
+        noPool: bigint;
+        resolvedAt: bigint;
+      }
+    ],
     "view"
   >;
   getFunction(
