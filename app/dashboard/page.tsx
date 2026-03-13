@@ -7,6 +7,7 @@ import { MarketCard }   from "@/components/market/MarketCard";
 import { ActivityFeed } from "@/components/feed/ActivityFeed";
 import { PriceUpdater } from "@/components/betting/PriceUpdater";
 import { useAppContext } from "@/app/providers";
+import { OnboardingModal } from "@/components/ui/OnboardingModal";
 import { AssetSymbol }  from "@/lib/config";
 
 const ALL_ASSETS: AssetSymbol[] = ["ETH", "BTC", "SOMI"];
@@ -60,6 +61,7 @@ export default function DashboardPage() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--page)" }}>
       <Navbar />
+      <OnboardingModal />
 
       <div style={{ display: "flex" }}>
         {/* Sidebar — hidden on mobile via className */}
