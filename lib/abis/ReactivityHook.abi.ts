@@ -37,7 +37,7 @@ export const REACTIVITY_HOOK_ABI = [
   "function withdraw(uint256 amount)",
 
   // Owner-only: manually trigger market creation for an asset (demo fallback)
-  "function manualTrigger(string asset) external",
+  "function manualTrigger(string asset, uint256 duration) external",
 
   // Owner-only: set the 3 price feed addresses
   "function setFeeds(address eth_, address btc_, address somi_)",

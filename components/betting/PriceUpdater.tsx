@@ -33,12 +33,34 @@ function CoinIcon({ asset, size = 20 }: { asset: AssetSymbol; size?: number }) {
   );
 }
 
+const DURATIONS = [
+  { label: "5 min",   secs: 300 },
+  { label: "15 min",  secs: 900 },
+  { label: "1 hour",  secs: 3600 },
+  { label: "4 hours", secs: 14400 },
+  { label: "1 day",   secs: 86400 },
+];
+
+function friendlyError(e: any): string {
+  const msg: string = e?.message || e?.reason || "";
+  if (msg.includes("user rejected") || msg.includes("ACTION_REJECTED") || msg.includes("4001"))
+    return "Transaction cancelled.";
+  if (msg.includes("insufficient funds") || msg.includes("exceeds balance"))
+    return "Insufficient STT balance.";
+  if (msg.includes("MarketAlreadyActive") || msg.includes("already"))
+    return "A market for this asset is already active — wait for it to end.";
+  if (msg.includes("execution reverted"))
+    return "Transaction failed. Try again.";
+  return "Something went wrong. Please try again.";
+}
+
 type Phase = "idle" | "pushing" | "creating" | "done" | "error";
 
 export function PriceUpdater() {
   const { priceFeed: { prices, updatePrice }, wallet: { wallet } } = useAppContext();
   const [asset,      setAsset]      = useState<AssetSymbol>("ETH");
   const [price,      setPrice]      = useState("");
+  const [duration,   setDuration]   = useState(DURATIONS[0]);
   const [phase,      setPhase]      = useState<Phase>("idle");
   const [pushHash,   setPushHash]   = useState<string | null>(null);
   const [createHash, setCreateHash] = useState<string | null>(null);
@@ -55,7 +77,7 @@ export function PriceUpdater() {
     if (!price || !wallet.isConnected) return;
     setErr(null); setPushHash(null); setCreateHash(null);
 
-    // ── Step 1: Push price ────────────────────────────────────────────────────
+    // Step 1: Push price
     setPhase("pushing");
     setStatusMsg("Pushing price on-chain…");
     let pushTxHash: string;
@@ -64,30 +86,29 @@ export function PriceUpdater() {
       setPushHash(pushTxHash);
       setPrice("");
     } catch (e: any) {
-      setErr(e?.reason || e?.message?.slice(0, 90) || "Price push failed");
+      setErr(friendlyError(e));
       setPhase("error");
       return;
     }
 
-    // ── Step 2: Create market ─────────────────────────────────────────────────
+    // Step 2: Create market with selected duration
     setPhase("creating");
     setStatusMsg("Creating prediction market…");
     try {
       const signer = await getSigner();
       const hook   = new ethers.Contract(CONTRACTS.REACTIVITY_HOOK, REACTIVITY_HOOK_ABI, signer);
-      const tx     = await hook.manualTrigger(asset);
+      const tx     = await hook.manualTrigger(asset, BigInt(duration.secs));
       const receipt = await tx.wait();
       setCreateHash(receipt.hash);
       setPhase("done");
       setStatusMsg("");
     } catch (e: any) {
-      // Market may already be active — that's fine, price was still pushed
       const msg: string = e?.message || "";
       if (msg.includes("MarketAlreadyActive") || msg.includes("already")) {
         setPhase("done");
         setStatusMsg("Market already active — place your bets!");
       } else {
-        setErr(e?.reason || e?.message?.slice(0, 90) || "Market creation failed");
+        setErr(friendlyError(e));
         setPhase("error");
       }
     }
@@ -114,8 +135,8 @@ export function PriceUpdater() {
           Trigger Reactivity
         </div>
         <p style={{ fontSize: 11, color: "var(--t3)", lineHeight: 1.5 }}>
-          Push a price on-chain → Somnia Reactivity detects it → prediction
-          market auto-creates. One click does it all.
+          Push a price on-chain → market auto-creates → users bet YES or NO
+          before the timer runs out.
         </p>
       </div>
 
@@ -169,7 +190,24 @@ export function PriceUpdater() {
         ))}
       </div>
 
-      {/* Price input + Launch button */}
+      {/* Duration selector */}
+      <div>
+        <div style={{ fontSize: 11, color: "var(--t4)", marginBottom: 5 }}>Market duration</div>
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {DURATIONS.map((d) => (
+            <button key={d.label} onClick={() => setDuration(d)} style={{
+              padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+              cursor: "pointer", border: "1px solid",
+              borderColor: duration.label === d.label ? "rgba(110,63,243,0.5)" : "var(--border)",
+              background: duration.label === d.label ? "rgba(110,63,243,0.12)" : "transparent",
+              color: duration.label === d.label ? "#6E3FF3" : "var(--t4)",
+              transition: "all 0.1s",
+            }}>{d.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Price input + Launch */}
       {(phase === "idle" || phase === "error") && (
         <div style={{ background: "var(--border-soft)", borderRadius: 8,
           padding: "10px 12px", border: "1px solid var(--border)" }}>
@@ -206,12 +244,19 @@ export function PriceUpdater() {
             </button>
           </div>
           {err && (
-            <p style={{ fontSize: 11, color: "#F87171", marginTop: 6 }}>{err}</p>
+            <div style={{ marginTop: 8, padding: "7px 10px", borderRadius: 6,
+              background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
+              display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ fontSize: 12 }}>⚠</span>
+              <span style={{ fontSize: 11, color: "#FCA5A5", flex: 1 }}>{err}</span>
+              <button onClick={() => setErr(null)} style={{ background: "none", border: "none",
+                color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 14, padding: 0 }}>×</button>
+            </div>
           )}
         </div>
       )}
 
-      {/* In-progress state */}
+      {/* In-progress */}
       {(phase === "pushing" || phase === "creating") && (
         <div style={{ padding: "12px", borderRadius: 8,
           background: "rgba(110,63,243,0.06)", border: "1px solid rgba(110,63,243,0.2)",
@@ -230,25 +275,21 @@ export function PriceUpdater() {
         </div>
       )}
 
-      {/* Done state */}
+      {/* Done */}
       {phase === "done" && (
         <div style={{ padding: "10px 12px", borderRadius: 8,
           background: "rgba(22,163,74,0.07)", border: "1px solid rgba(22,163,74,0.25)" }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#22C55E", marginBottom: 6 }}>
-            ✓ Market is live — place your bets!
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#22C55E", marginBottom: 4 }}>
+            {statusMsg || "Market is live — place your bets!"}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {pushHash && (
               <a href={"https://shannon-explorer.somnia.network/tx/" + pushHash}
-                target="_blank" style={{ fontSize: 11, color: "var(--t4)" }}>
-                Price tx ↗
-              </a>
+                target="_blank" style={{ fontSize: 11, color: "var(--t4)" }}>Price tx ↗</a>
             )}
             {createHash && (
               <a href={"https://shannon-explorer.somnia.network/tx/" + createHash}
-                target="_blank" style={{ fontSize: 11, color: "#22C55E" }}>
-                Market created tx ↗
-              </a>
+                target="_blank" style={{ fontSize: 11, color: "#22C55E" }}>Market created tx ↗</a>
             )}
           </div>
           <button onClick={reset}

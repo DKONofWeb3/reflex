@@ -74,8 +74,8 @@
       ]
     },
     "C:\\Users\\DELL\\Documents\\KonOfWeb3\\reflex\\contracts\\ReactivityHook.sol": {
-      "lastModificationDate": 1773421799931,
-      "contentHash": "dc4c317484c62ceedbbb237ec74409aa",
+      "lastModificationDate": 1773433053789,
+      "contentHash": "2b33fc3860257512796b363c6ed584b1",
       "sourceName": "contracts/ReactivityHook.sol",
       "solcConfig": {
         "version": "0.8.24",

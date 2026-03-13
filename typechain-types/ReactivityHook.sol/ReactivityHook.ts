@@ -134,7 +134,7 @@ export interface ReactivityHookInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "manualTrigger",
-    values: [string]
+    values: [string, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "nextSmartBetId",
@@ -453,7 +453,11 @@ export interface ReactivityHook extends BaseContract {
 
   lastMilestone: TypedContractMethod<[arg0: string], [bigint], "view">;
 
-  manualTrigger: TypedContractMethod<[asset: string], [void], "nonpayable">;
+  manualTrigger: TypedContractMethod<
+    [asset: string, duration: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
 
   nextSmartBetId: TypedContractMethod<[], [bigint], "view">;
 
@@ -559,7 +563,11 @@ export interface ReactivityHook extends BaseContract {
   ): TypedContractMethod<[arg0: string], [bigint], "view">;
   getFunction(
     nameOrSignature: "manualTrigger"
-  ): TypedContractMethod<[asset: string], [void], "nonpayable">;
+  ): TypedContractMethod<
+    [asset: string, duration: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "nextSmartBetId"
   ): TypedContractMethod<[], [bigint], "view">;

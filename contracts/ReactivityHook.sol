@@ -247,7 +247,7 @@ contract ReactivityHook is SomniaEventHandler {
         uint256 targetPrice = milestone + step;
 
         // Build question string
-        string memory question = _buildQuestion(asset, targetPrice);
+        string memory question = _buildQuestion(asset, targetPrice, "10 minutes");
 
         uint256 marketId = predictionMarket.createMarket(
             asset,
@@ -388,7 +388,7 @@ contract ReactivityHook is SomniaEventHandler {
 
     // ─── Manual trigger (owner-only fallback) ─────────────────────────────────
     // Bypasses milestone checks — directly creates a market for demo purposes.
-    function manualTrigger(string calldata asset) external onlyOwner {
+    function manualTrigger(string calldata asset, uint256 duration) external onlyOwner {
         address feed;
         if      (keccak256(bytes(asset)) == keccak256("ETH"))  feed = ethFeed;
         else if (keccak256(bytes(asset)) == keccak256("BTC"))  feed = btcFeed;
@@ -416,11 +416,11 @@ contract ReactivityHook is SomniaEventHandler {
             targetPrice = currentPrice + (currentPrice / 10) + 1;
         }
 
-        string memory question = _buildQuestion(asset, targetPrice);
+        string memory question = _buildQuestion(asset, targetPrice, _durationLabel(duration));
         lastMilestone[asset] = milestone;
 
         uint256 marketId = predictionMarket.createMarket(
-            asset, question, targetPrice, currentPrice, MARKET_DURATION
+            asset, question, targetPrice, currentPrice, duration
         );
         emit MarketAutoCreated(marketId, asset, targetPrice);
     }
@@ -451,14 +451,23 @@ contract ReactivityHook is SomniaEventHandler {
     // Build a human-readable market question
     // targetPrice is stored × 100, so divide by 100 for display
     // We return a simple string — for the hackathon this is fine
+    function _durationLabel(uint256 secs) internal pure returns (string memory) {
+        if (secs <= 5  minutes) return "5 minutes";
+        if (secs <= 15 minutes) return "15 minutes";
+        if (secs <= 1  hours)   return "1 hour";
+        if (secs <= 4  hours)   return "4 hours";
+        if (secs <= 1  days)    return "24 hours";
+        if (secs <= 7  days)    return "7 days";
+        return "30 days";
+    }
+
     function _buildQuestion(
         string memory asset,
-        uint256 targetPrice
+        uint256 targetPrice,
+        string memory durationLabel
     ) internal pure returns (string memory) {
-        // Simple question: "Will [ASSET] reach [PRICE] in 10 minutes?"
-        // Full price formatting in Solidity is verbose; we keep it readable for the demo
         return string(abi.encodePacked(
-            "Will ", asset, " hit target price in 10 minutes?"
+            "Will ", asset, " hit target price in ", durationLabel, "?"
         ));
     }
 

@@ -256,7 +256,17 @@ function SmartBetPanel({ onClose }: { onClose: () => void }) {
         setHash(await registerSmartBet({ asset, condition: cond, triggerPrice: parseFloat(trigger), side, betAmount: amount }));
         setTrigger("");
       }
-    } catch (e: any) { setErr(e?.message?.slice(0, 100) || "Failed"); }
+    } catch (e: any) {
+      const msg: string = e?.message || e?.reason || "";
+      if (msg.includes("user rejected") || msg.includes("ACTION_REJECTED") || msg.includes("4001"))
+        setErr("Transaction cancelled.");
+      else if (msg.includes("insufficient funds"))
+        setErr("Insufficient STT balance.");
+      else if (msg.includes("InsufficientBalance"))
+        setErr("Not enough deposited STT. Fund your account first.");
+      else
+        setErr("Something went wrong. Please try again.");
+    }
   };
 
   const s: React.CSSProperties = {
@@ -341,8 +351,17 @@ function SmartBetPanel({ onClose }: { onClose: () => void }) {
             {isLoading ? "Processing..." : tab === "fund" ? "Deposit STT" : "Create Smart Bet"}
           </button>
 
-          {err  && <p style={{ fontSize: 12, color: "#DC2626" }}>{err}</p>}
-          {hash && <a href={`https://somnia-testnet.socialscan.io/tx/${hash}`}
+          {err && (
+            <div style={{ padding: "8px 10px", borderRadius: 7,
+              background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)",
+              display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ fontSize: 12 }}>⚠</span>
+              <span style={{ fontSize: 11, color: "#FCA5A5", flex: 1 }}>{err}</span>
+              <button onClick={() => setErr(null)} style={{ background: "none", border: "none",
+                color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 14, padding: 0 }}>×</button>
+            </div>
+          )}
+          {hash && <a href={"https://shannon-explorer.somnia.network/tx/" + hash}
             target="_blank" style={{ fontSize: 12, color: "var(--brand)" }}>✓ Confirmed ↗</a>}
         </div>
 
