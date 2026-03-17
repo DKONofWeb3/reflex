@@ -16,35 +16,36 @@ function mapStatus(n: number): MarketStatus {
 }
 function parseMarket(raw: any): Market | null {
   if (!raw) return null;
-  // Contract returns Market memory (struct) → ethers wraps in outer tuple
-  // With ((tuple)) ABI: raw[0] is the struct, raw[0].id etc
-  // With flat ABI: raw.id directly
-  // Support both cases:
-  const m = (raw[0] && typeof raw[0] === 'object' && raw[0].id !== undefined)
-    ? raw[0]   // tuple return: raw[0] is the struct
-    : raw;     // flat return: raw has fields directly
-  const id           = m.id           ?? m[0];
-  const asset        = m.asset        ?? m[1];
-  const question     = m.question     ?? m[2];
-  const targetPrice  = m.targetPrice  ?? m[3];
-  const createdPrice = m.createdPrice ?? m[4];
-  const deadline     = m.deadline     ?? m[5];
-  const statusRaw    = m.status       ?? m[6];
-  const yesPool      = m.yesPool      ?? m[7];
-  const noPool       = m.noPool       ?? m[8];
-  const resolvedAt   = m.resolvedAt   ?? m[9];
-  if (!id || id === 0n) return null;
+  // Tuple ABI returns array: raw[0]=id, raw[1]=asset, ... raw[9]=resolvedAt
+  // All values come back as strings or bigints
+  const id          = raw[0];
+  const asset       = raw[1];
+  const question    = raw[2];
+  const targetPrice = raw[3];
+  const createdPrice= raw[4];
+  const deadline    = raw[5];
+  const statusRaw   = raw[6];
+  const yesPool     = raw[7];
+  const noPool      = raw[8];
+  const resolvedAt  = raw[9];
+  // id=0 means empty market slot
+  if (!id || BigInt(id) === 0n) return null;
   const status = mapStatus(Number(statusRaw));
+  const yp = typeof yesPool === 'bigint' ? yesPool : BigInt(yesPool ?? 0);
+  const np = typeof noPool  === 'bigint' ? noPool  : BigInt(noPool ?? 0);
+  const tp = typeof targetPrice  === 'bigint' ? targetPrice  : BigInt(targetPrice ?? 0);
+  const cp = typeof createdPrice === 'bigint' ? createdPrice : BigInt(createdPrice ?? 0);
   return {
-    id, asset: asset as AssetSymbol, question,
-    targetPrice, currentPrice: createdPrice,
+    id: BigInt(id), asset: asset as AssetSymbol, question,
+    targetPrice: tp, currentPrice: cp,
     deadline: Number(deadline), status,
-    yesPool, noPool, totalPool: yesPool + noPool,
+    yesPool: yp, noPool: np, totalPool: yp + np,
     resolvedAt: Number(resolvedAt) || undefined,
     winner: status === "RESOLVED_YES" ? "YES" : status === "RESOLVED_NO" ? "NO" : undefined,
     createdAt: 0,
   };
 }
+
 
 export function useMarkets() {
   const [markets, setMarkets]     = useState<MarketsMap>(INITIAL);
