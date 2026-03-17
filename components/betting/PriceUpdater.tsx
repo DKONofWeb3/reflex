@@ -97,7 +97,7 @@ export function PriceUpdater() {
     try {
       const signer = await getSigner();
       const hook   = new ethers.Contract(CONTRACTS.REACTIVITY_HOOK, REACTIVITY_HOOK_ABI, signer);
-      const tx     = await hook.manualTrigger(asset, BigInt(duration.secs));
+      const tx     = await hook.manualTrigger(asset);
       const receipt = await tx.wait();
       setCreateHash(receipt.hash);
       setPhase("done");
