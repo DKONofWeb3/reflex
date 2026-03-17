@@ -15,19 +15,26 @@ function mapStatus(n: number): MarketStatus {
   return (["ACTIVE","RESOLVED_YES","RESOLVED_NO","EXPIRED"] as MarketStatus[])[n] ?? "ACTIVE";
 }
 function parseMarket(raw: any): Market | null {
-  if (!raw || raw[0] === 0n) return null;
-  // Struct returned as tuple — access by index or name
-  const id           = raw[0] ?? raw.id;
-  const asset        = raw[1] ?? raw.asset;
-  const question     = raw[2] ?? raw.question;
-  const targetPrice  = raw[3] ?? raw.targetPrice;
-  const createdPrice = raw[4] ?? raw.createdPrice;
-  const deadline     = raw[5] ?? raw.deadline;
-  const status       = mapStatus(Number(raw[6] ?? raw.status));
-  const yesPool      = raw[7] ?? raw.yesPool;
-  const noPool       = raw[8] ?? raw.noPool;
-  const resolvedAt   = raw[9] ?? raw.resolvedAt;
+  if (!raw) return null;
+  // Contract returns Market memory (struct) → ethers wraps in outer tuple
+  // With ((tuple)) ABI: raw[0] is the struct, raw[0].id etc
+  // With flat ABI: raw.id directly
+  // Support both cases:
+  const m = (raw[0] && typeof raw[0] === 'object' && raw[0].id !== undefined)
+    ? raw[0]   // tuple return: raw[0] is the struct
+    : raw;     // flat return: raw has fields directly
+  const id           = m.id           ?? m[0];
+  const asset        = m.asset        ?? m[1];
+  const question     = m.question     ?? m[2];
+  const targetPrice  = m.targetPrice  ?? m[3];
+  const createdPrice = m.createdPrice ?? m[4];
+  const deadline     = m.deadline     ?? m[5];
+  const statusRaw    = m.status       ?? m[6];
+  const yesPool      = m.yesPool      ?? m[7];
+  const noPool       = m.noPool       ?? m[8];
+  const resolvedAt   = m.resolvedAt   ?? m[9];
   if (!id || id === 0n) return null;
+  const status = mapStatus(Number(statusRaw));
   return {
     id, asset: asset as AssetSymbol, question,
     targetPrice, currentPrice: createdPrice,
