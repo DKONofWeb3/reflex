@@ -16,34 +16,36 @@ function mapStatus(n: number): MarketStatus {
 }
 function parseMarket(raw: any): Market | null {
   if (!raw) return null;
-  // Tuple ABI returns array: raw[0]=id, raw[1]=asset, ... raw[9]=resolvedAt
-  // All values come back as strings or bigints
-  const id          = raw[0];
-  const asset       = raw[1];
-  const question    = raw[2];
-  const targetPrice = raw[3];
-  const createdPrice= raw[4];
-  const deadline    = raw[5];
-  const statusRaw   = raw[6];
-  const yesPool     = raw[7];
-  const noPool      = raw[8];
-  const resolvedAt  = raw[9];
-  // id=0 means empty market slot
-  if (!id || BigInt(id) === 0n) return null;
-  const status = mapStatus(Number(statusRaw));
-  const yp = typeof yesPool === 'bigint' ? yesPool : BigInt(yesPool ?? 0);
-  const np = typeof noPool  === 'bigint' ? noPool  : BigInt(noPool ?? 0);
-  const tp = typeof targetPrice  === 'bigint' ? targetPrice  : BigInt(targetPrice ?? 0);
-  const cp = typeof createdPrice === 'bigint' ? createdPrice : BigInt(createdPrice ?? 0);
-  return {
-    id: BigInt(id), asset: asset as AssetSymbol, question,
-    targetPrice: tp, currentPrice: cp,
-    deadline: Number(deadline), status,
-    yesPool: yp, noPool: np, totalPool: yp + np,
-    resolvedAt: Number(resolvedAt) || undefined,
-    winner: status === "RESOLVED_YES" ? "YES" : status === "RESOLVED_NO" ? "NO" : undefined,
-    createdAt: 0,
-  };
+  // ethers v6 with tuple ABI returns flat array:
+  // ["3","ETH","Will ETH..","230000","220000","1773786628","0","0","0","0"]
+  // Index: 0=id, 1=asset, 2=question, 3=targetPrice, 4=createdPrice,
+  //        5=deadline, 6=status, 7=yesPool, 8=noPool, 9=resolvedAt
+  const id = raw[0];
+  if (id === undefined || id === null || String(id) === "0") return null;
+  try {
+    const idBig = BigInt(String(id));
+    if (idBig === 0n) return null;
+    const status = mapStatus(Number(raw[6]));
+    const toBig = (v: any) => { try { return BigInt(String(v ?? 0)); } catch { return 0n; } };
+    const yp = toBig(raw[7]);
+    const np = toBig(raw[8]);
+    return {
+      id: idBig,
+      asset: String(raw[1]) as AssetSymbol,
+      question: String(raw[2]),
+      targetPrice:  toBig(raw[3]),
+      currentPrice: toBig(raw[4]),
+      deadline: Number(raw[5]),
+      status,
+      yesPool: yp, noPool: np, totalPool: yp + np,
+      resolvedAt: Number(raw[9]) || undefined,
+      winner: status === "RESOLVED_YES" ? "YES" : status === "RESOLVED_NO" ? "NO" : undefined,
+      createdAt: 0,
+    };
+  } catch (e) {
+    console.error("parseMarket error:", e, "raw:", raw);
+    return null;
+  }
 }
 
 
